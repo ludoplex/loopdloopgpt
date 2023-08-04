@@ -85,7 +85,7 @@ class Browser(BaseTool):
         if self.driver is None:
             self._init_driver()
         num_retries = 3
-        for i in range(num_retries):
+        for _ in range(num_retries):
             try:
                 self.driver.get(url)
                 break

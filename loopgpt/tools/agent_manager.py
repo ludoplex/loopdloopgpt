@@ -51,8 +51,7 @@ class MessageAgent(_AgentManagerTool):
     def run(self, id: str, message: str):
         if id not in self.agent.sub_agents:
             return {"resp": "AGENT NOT FOUND!"}
-        resp = self.agent.sub_agents[id][0].chat(message)
-        return resp
+        return self.agent.sub_agents[id][0].chat(message)
 
 
 class DeleteAgent(_AgentManagerTool):

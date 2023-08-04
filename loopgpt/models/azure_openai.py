@@ -88,15 +88,13 @@ class AzureOpenAIModel(OpenAIModel):
         num_retries = 3
         for _ in range(num_retries):
             try:
-                resp = openai.ChatCompletion.create(
+                return openai.ChatCompletion.create(
                     engine=self.deployment_id,
                     messages=messages,
                     api_key=api_key,
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )["choices"][0]["message"]["content"]
-                return resp
-
             except RateLimitError:
                 logger.warn("Rate limit exceeded. Retrying after 20 seconds.")
                 time.sleep(20)

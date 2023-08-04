@@ -38,8 +38,7 @@ class AzureOpenAIEmbeddingProvider(OpenAIEmbeddingProvider):
         )
 
     def config(self):
-        cfg = {"deployment_id": self.deployment_id, "api_key": self.api_key}
-        return cfg
+        return {"deployment_id": self.deployment_id, "api_key": self.api_key}
 
     @classmethod
     def from_config(cls, config):

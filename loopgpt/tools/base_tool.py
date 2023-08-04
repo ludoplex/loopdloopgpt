@@ -24,7 +24,7 @@ class BaseTool:
     def id(self) -> str:
         return "_".join(camel_case_split(self.__class__.__name__)).lower()
 
-    def run(**kwargs) -> str:
+    def run(self) -> str:
         raise NotImplementedError()
 
     def prompt(self):

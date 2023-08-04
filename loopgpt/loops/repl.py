@@ -17,14 +17,14 @@ from colorama import Fore, Style
 
 import os
 
-LOOP_GPT = Fore.GREEN + "LoopGPT"
-REASONING = Fore.LIGHTBLUE_EX + "REASONING"
-PLAN = Fore.LIGHTYELLOW_EX + "PLAN"
-PROGRESS = Fore.LIGHTRED_EX + "PROGRESS"
-SPEAK = Fore.LIGHTGREEN_EX + "SPEAK"
-COMMAND = Fore.LIGHTMAGENTA_EX + "NEXT_COMMAND"
-SYSTEM = Fore.LIGHTYELLOW_EX + "SYSTEM"
-INPUT_PROMPT = Fore.LIGHTYELLOW_EX + "Enter message: " + Style.RESET_ALL
+LOOP_GPT = f"{Fore.GREEN}LoopGPT"
+REASONING = f"{Fore.LIGHTBLUE_EX}REASONING"
+PLAN = f"{Fore.LIGHTYELLOW_EX}PLAN"
+PROGRESS = f"{Fore.LIGHTRED_EX}PROGRESS"
+SPEAK = f"{Fore.LIGHTGREEN_EX}SPEAK"
+COMMAND = f"{Fore.LIGHTMAGENTA_EX}NEXT_COMMAND"
+SYSTEM = f"{Fore.LIGHTYELLOW_EX}SYSTEM"
+INPUT_PROMPT = f"{Fore.LIGHTYELLOW_EX}Enter message: {Style.RESET_ALL}"
 
 profiles = {
     "loopgpt": LOOP_GPT,
@@ -44,7 +44,8 @@ def listed_prompt(speaker, message, item_kind):
     i = 1
     while True:
         print(
-            indent + f"- {Fore.LIGHTBLUE_EX}{item_kind} {i} : {Style.RESET_ALL}", end=""
+            f"{indent}- {Fore.LIGHTBLUE_EX}{item_kind} {i} : {Style.RESET_ALL}",
+            end="",
         )
         inp = input()
         if inp.lower().strip() == "exit":
@@ -152,9 +153,7 @@ def cli(agent, continuous=False):
                             yn = "y"
                             n -= 1
                         else:
-                            inp = input(
-                                f"Execute? (Y/N/Y:n to execute n steps continuously): "
-                            )
+                            inp = input("Execute? (Y/N/Y:n to execute n steps continuously): ")
                             yn, n = inp.split(":") if ":" in inp else (inp, 1)
                             n = int(n)
                             yn = yn.lower().strip()

@@ -7,10 +7,7 @@ try:
     class StopOnTokens(StoppingCriteria):
         def __call__(self, input_ids, scores, **kwargs) -> bool:
             stop_ids = [50278, 50279, 50277, 1, 0]
-            for stop_id in stop_ids:
-                if input_ids[0][-1] == stop_id:
-                    return True
-            return False
+            return any(input_ids[0][-1] == stop_id for stop_id in stop_ids)
 
 except ImportError:
     pass
@@ -72,9 +69,7 @@ class HuggingFaceModel(BaseModel):
         )
 
         completion_tokens = tokens[0][encoding["input_ids"].size(1) :]
-        completion = self.tokenizer.decode(completion_tokens, skip_special_tokens=True)
-
-        return completion
+        return self.tokenizer.decode(completion_tokens, skip_special_tokens=True)
 
     def encode_messages(self, messages: List[Dict[str, str]]) -> str:
         message_format = {
@@ -83,9 +78,10 @@ class HuggingFaceModel(BaseModel):
             "assistant": "<|ASSISTANT|>{0}",
         }
 
-        data = []
-        for message in messages:
-            data.append(message_format[message["role"]].format(message["content"]))
+        data = [
+            message_format[message["role"]].format(message["content"])
+            for message in messages
+        ]
         data.append(message_format["assistant"].format(""))
 
         return "".join(data)

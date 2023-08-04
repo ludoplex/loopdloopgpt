@@ -23,7 +23,7 @@ class GetWeather(BaseTool):
             if not isinstance(city, str):
                 return "Error: The city name should be a string."
             city.replace(" ", "%20")
-            url = "https://wttr.in/{}?format=%l+%C+%h+%t+%w+%p+%P".format(city)
+            url = f"https://wttr.in/{city}?format=%l+%C+%h+%t+%w+%p+%P"
             data = requests.get(url).text.split(" ")
             keys = (
                 "location",

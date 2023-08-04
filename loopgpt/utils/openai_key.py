@@ -28,8 +28,6 @@ def get_openai_key(key: Optional[str] = None):
 
     if key is None:
         raise ValueError(
-            f"OpenAI API Key not found. "
-            "Please set the `OPENAI_API_KEY` environment variable or add it to `.env`. "
-            "See https://github.com/farizrahman4u/loopgpt#setup-your-openai-api-key- for more details"
+            'OpenAI API Key not found. Please set the `OPENAI_API_KEY` environment variable or add it to `.env`. See https://github.com/farizrahman4u/loopgpt#setup-your-openai-api-key- for more details'
         )
     return key

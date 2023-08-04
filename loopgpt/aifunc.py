@@ -28,7 +28,7 @@ def get_args_prompt(sig, args, kwargs):
     positional_args = [
         arg
         for arg, p in params.items()
-        if p.kind == p.POSITIONAL_OR_KEYWORD or p.kind == p.POSITIONAL_ONLY
+        if p.kind in [p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY]
     ]
 
     str_fmt = '"""\n{}\n"""'
@@ -238,7 +238,7 @@ class aifunc:
             func_prompt = get_func_prompt(func, sig)
             agent.description = func_prompt
 
-            if len(args) == 0 and len(kwargs) == 0:
+            if not args and not kwargs:
                 args_str = "Arguments:\n\nThis function does not take any arguments."
             else:
                 args_str = get_args_prompt(sig, args, kwargs)

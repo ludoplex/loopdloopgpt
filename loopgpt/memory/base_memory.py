@@ -2,10 +2,10 @@ from typing import *
 
 
 class BaseMemory:
-    def add(doc: str, key: Optional[str] = None):
+    def add(self, key: Optional[str] = None):
         raise NotImplementedError()
 
-    def get(query: str, k: int) -> List[str]:
+    def get(self, k: int) -> List[str]:
         raise NotImplementedError()
 
     def config(self):

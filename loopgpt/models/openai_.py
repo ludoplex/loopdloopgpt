@@ -25,15 +25,13 @@ class OpenAIModel(BaseModel):
         num_retries = 3
         for i in range(num_retries):
             try:
-                resp = openai.ChatCompletion.create(
+                return openai.ChatCompletion.create(
                     model=self.model,
                     messages=messages,
                     api_key=api_key,
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )["choices"][0]["message"]["content"]
-                return resp
-
             except RateLimitError:
                 logger.warn("Rate limit exceeded. Retrying after 20 seconds.")
                 time.sleep(20)

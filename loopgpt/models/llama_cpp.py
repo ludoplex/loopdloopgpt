@@ -9,7 +9,7 @@ from loopgpt.models.base import BaseModel
 def llama_executable() -> Optional[str]:
     import os
 
-    if not "LLAMA_CPP" in os.environ:
+    if "LLAMA_CPP" not in os.environ:
         logger.warn(
             "llama.cpp executable not found. Please set the `LLAMA_CPP` "
             "environment variable to the path to the `main` executable to "
@@ -81,9 +81,10 @@ class LlamaCppModel(BaseModel):
             },
         }[self.prompt_style]
 
-        data = []
-        for message in messages:
-            data.append(message_format[message["role"]].format(message["content"]))
+        data = [
+            message_format[message["role"]].format(message["content"])
+            for message in messages
+        ]
         data.append(message_format["assistant"].format(""))
 
         return "".join(data)

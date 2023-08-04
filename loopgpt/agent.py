@@ -123,7 +123,7 @@ class Agent:
             msg
             for msg in self.history
             if msg["role"] != "user"
-            and not (msg["role"] == "system" and "do_nothing" in msg["content"])
+            and (msg["role"] != "system" or "do_nothing" not in msg["content"])
         ]
         return msgs[-n - 1 :]
 
@@ -165,9 +165,13 @@ class Agent:
                         context = {
                             "role": "system",
                             "content": (
-                                f"Remember the following things in your memory:"
-                                + "\n=============================MEMORY=============================\n"
-                                + f"\n{memstr}\n"
+                                (
+                                    (
+                                        "Remember the following things in your memory:"
+                                        + "\n=============================MEMORY=============================\n"
+                                    )
+                                    + f"\n{memstr}\n"
+                                )
                                 + "================================================================\n"
                             ),
                         }
@@ -182,13 +186,12 @@ class Agent:
             ntokens = self.model.count_tokens(msgs)
             if ntokens < maxtokens:
                 break
+            if len(history) > 1:
+                history = history[1:]
+            elif relevant_memory:
+                relevant_memory = relevant_memory[1:]
             else:
-                if len(history) > 1:
-                    history = history[1:]
-                elif relevant_memory:
-                    relevant_memory = relevant_memory[1:]
-                else:
-                    break
+                break
         return msgs, ntokens
 
     def _get_compressed_history(self):
@@ -199,8 +202,7 @@ class Agent:
             entry = hist[i].copy()
             try:
                 respd = json.loads(entry["content"])
-                thoughts = respd.get("thoughts")
-                if thoughts:
+                if thoughts := respd.get("thoughts"):
                     thoughts.pop("reasoning", None)
                     thoughts.pop("speak", None)
                     thoughts.pop("text", None)
@@ -264,27 +266,24 @@ class Agent:
                     self.staging_tool = {"name": "task_complete", "args": {}}
                     self.staging_response = resp
                     self.state = AgentStates.STOP
-            else:
-                if isinstance(resp, dict):
-                    if "name" in resp:
-                        resp = {"command": resp}
-                    if "command" in resp:
-                        self.staging_tool = resp["command"]
-                        self.staging_response = resp
-                        self.state = AgentStates.TOOL_STAGED
-                    else:
-                        self.state = AgentStates.IDLE
+            elif isinstance(resp, dict):
+                if "name" in resp:
+                    resp = {"command": resp}
+                if "command" in resp:
+                    self.staging_tool = resp["command"]
+                    self.staging_response = resp
+                    self.state = AgentStates.TOOL_STAGED
                 else:
                     self.state = AgentStates.IDLE
+            else:
+                self.state = AgentStates.IDLE
 
-            progress = resp.get("thoughts", {}).get("progress")
-            if progress:
+            if progress := resp.get("thoughts", {}).get("progress"):
                 if isinstance(plan, str):
                     self.progress += [progress]
                 elif isinstance(progress, list):
                     self.progress += progress
-            plan = resp.get("thoughts", {}).get("plan")
-            if plan:
+            if plan := resp.get("thoughts", {}).get("plan"):
                 if isinstance(plan, str):
                     self.plan = [plan]
                 if isinstance(plan, list):
@@ -365,8 +364,7 @@ class Agent:
     def _extract_json_with_gpt(self, s):
         func = "def convert_to_json(response: str) -> str:"
         desc = f"""Convert the given string to a JSON string of the form \n{json.dumps(DEFAULT_RESPONSE_FORMAT_, indent=4)}\nEnsure the result can be parsed by Python json.loads."""
-        res = ai_function(func, desc, [s], self.model)
-        return res
+        return ai_function(func, desc, [s], self.model)
 
     def _load_json(self, s, try_gpt=True):
         if "Result: {" in s:
@@ -395,16 +393,24 @@ class Agent:
                         raise
 
     def last_user_input(self) -> str:
-        for msg in self.history[::-1]:
-            if msg["role"] == "user":
-                return msg["content"]
-        return ""
+        return next(
+            (
+                msg["content"]
+                for msg in self.history[::-1]
+                if msg["role"] == "user"
+            ),
+            "",
+        )
 
     def last_agent_response(self) -> str:
-        for msg in self.history[::-1]:
-            if msg["role"] == "assistant":
-                return msg["content"]
-        return ""
+        return next(
+            (
+                msg["content"]
+                for msg in self.history[::-1]
+                if msg["role"] == "assistant"
+            ),
+            "",
+        )
 
     def run_staging_tool(self):
         if "name" not in self.staging_tool:
@@ -473,8 +479,7 @@ class Agent:
         self.plan.clear()
 
     def header_prompt(self):
-        prompt = []
-        prompt.append(self.persona_prompt())
+        prompt = [self.persona_prompt()]
         if self.tools:
             prompt.append(self.tools_prompt())
         if self.goals:
@@ -491,10 +496,8 @@ class Agent:
         return f"You are {self.name}, {self.description}."
 
     def progress_prompt(self):
-        prompt = []
-        prompt.append(f"PROGRESS SO FAR:")
-        for i, p in enumerate(self.progress):
-            prompt.append(f"{i + 1}. DONE - {p}")
+        prompt = ["PROGRESS SO FAR:"]
+        prompt.extend(f"{i + 1}. DONE - {p}" for i, p in enumerate(self.progress))
         return "\n".join(prompt) + "\n"
 
     def plan_prompt(self):
@@ -502,23 +505,18 @@ class Agent:
         return f"CURRENT PLAN:\n{plan}\n"
 
     def goals_prompt(self):
-        prompt = []
-        prompt.append(f"GOALS:")
-        for i, g in enumerate(self.goals):
-            prompt.append(f"{i + 1}. {g}")
+        prompt = ["GOALS:"]
+        prompt.extend(f"{i + 1}. {g}" for i, g in enumerate(self.goals))
         return "\n".join(prompt) + "\n"
 
     def constraints_prompt(self):
-        prompt = []
-        prompt.append(f"CONSTRAINTS:")
-        for i, c in enumerate(self.constraints):
-            prompt.append(f"{i + 1}. {c}")
+        prompt = ["CONSTRAINTS:"]
+        prompt.extend(f"{i + 1}. {c}" for i, c in enumerate(self.constraints))
         return "\n".join(prompt) + "\n"
 
     def tools_prompt(self, extras=False):
-        prompt = []
-        prompt.append("The following commands are already defined for you:")
-        for i, tool in enumerate(self.tools.values()):
+        prompt = ["The following commands are already defined for you:"]
+        for tool in self.tools.values():
             tool.agent = self
             prompt.append(tool.prompt())
 
@@ -531,15 +529,12 @@ class Agent:
             do_nothing_command = (
                 f'def do_nothing():\n\t"""{do_nothing.__doc__}\n\t"""'.expandtabs(4)
             )
-            prompt.append(task_complete_command)
-            prompt.append(do_nothing_command)
+            prompt.extend((task_complete_command, do_nothing_command))
         return "\n\n".join(prompt) + "\n"
 
     def resources_prompt(self):
-        prompt = []
-        prompt.append("Resources:")
-        for i, res in enumerate(self.resources):
-            prompt.append(f"{i + 1}. {res}")
+        prompt = ["Resources:"]
+        prompt.extend(f"{i + 1}. {res}" for i, res in enumerate(self.resources))
         return "\n".join(prompt) + "\n"
 
     def config(self, include_state=True):
@@ -556,20 +551,18 @@ class Agent:
             "tools": [tool.config() for tool in self.tools.values()],
         }
         if include_state:
-            cfg.update(
-                {
-                    "progress": self.progress[:],
-                    "plan": self.plan[:],
-                    "sub_agents": {
-                        k: (v[0].config(), v[1]) for k, v in self.sub_agents.items()
-                    },
-                    "history": self.history[:],
-                    "memory": self.memory.config(),
-                    "staging_tool": self.staging_tool,
-                    "staging_response": self.staging_response,
-                    "tool_response": self.tool_response,
-                }
-            )
+            cfg |= {
+                "progress": self.progress[:],
+                "plan": self.plan[:],
+                "sub_agents": {
+                    k: (v[0].config(), v[1]) for k, v in self.sub_agents.items()
+                },
+                "history": self.history[:],
+                "memory": self.memory.config(),
+                "staging_tool": self.staging_tool,
+                "staging_response": self.staging_response,
+                "tool_response": self.tool_response,
+            }
         return cfg
 
     @classmethod
@@ -590,8 +583,7 @@ class Agent:
             for k, v in config.get("sub_agents", {}).items()
         }
         agent.history = config.get("history", [])
-        memory = config.get("memory")
-        if memory:
+        if memory := config.get("memory"):
             agent.memory = memory_from_config(memory)
         agent.staging_tool = config.get("staging_tool")
         agent.staging_response = config.get("staging_response")

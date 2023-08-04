@@ -25,7 +25,7 @@ class GetWeather(BaseTool):
 
     def run(self, city):
         try:
-            url = "https://wttr.in/{}?format=%l+%C+%h+%t+%w+%p+%P".format(city)
+            url = f"https://wttr.in/{city}?format=%l+%C+%h+%t+%w+%p+%P"
             data = requests.get(url).text.split(" ")
             keys = (
                 "location",
